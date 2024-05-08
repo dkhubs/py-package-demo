@@ -171,3 +171,19 @@ if __name__ == "__main__":
 ```
 
 ***Fixtures可以选择使用yield语句为测试函数提供它们的值, 而不是return。在这种情况下, yield语句之后的代码块作为拆卸代码执行, 而不管测试结果如何。fixture功能必须只产生一次***
+
+### conftest.py配置
+
+单独管理预置的操作场景, pytest默认读取conftest.py里面的配置。注意事项:
+
+- conftest.py 配置脚本名称是固定的, 不能改名称
+
+- conftest.py 与运行的用例要在同一个 package 下, 并且有 __init__.py 文件
+
+- 不需要 import 导入 conftest.py, pytest 用例会自动查找
+
+参考脚本代码设计
+
+```
+
+```
