@@ -1,5 +1,11 @@
-def func(x):
-    return x + 1
+import pytest
 
-def test_func():
-    assert func(3) == 5
+def testanswer(cmdopt):
+    if cmdopt == 'type1':
+        print('first')
+    elif cmdopt == 'type2':
+        print('second')
+    assert 0
+    
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_sample.py'])
