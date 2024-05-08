@@ -265,3 +265,29 @@ def smtp_connection(request):
 - conftest.py 与运行的用例要在同一个 package 下, 并且有 __init__.py 文件
 
 - 不需要 import 导入 conftest.py, pytest 用例会自动查找
+
+### pytest生成html报告
+
+pytest-HTML是一个插件，pytest用于生成测试结果的HTML报告
+
+```
+pip install pytest-html
+
+pytest --html=report.html
+
+# 指定报告路径
+pytest --html=./report/report.html
+
+# 报告独立显示
+pytest --html=report.html --self-contained-html
+```
+
+#### 在html报告中展示报错截图 + 失败重跑
+
+1. 失败截图可以写到conftest.py文件里, 这样用例运行时, 只要检测到用例实例, 就调用截图的方法, 并且把截图存到html报告上
+
+```
+
+```
+
+2. ss
