@@ -149,3 +149,25 @@ if __name__ == "__main__":
 - 方法级: setup_method/teardown_method, 开始于方法始末(在类中)
 
 - 类里面的(setup/teardown)运行在调用方法的前后
+
+### fixture:自定义测试用例的预置条件
+
+前面一篇讲到用例加setup和teardown可以实现在测试用例之前或之后加入一些操作, 但这种是整个脚本全局生效的, 如果我想实现以下场景: 用例1需要先登录，用例2不需要登录，用例3需要先登录。很显然这就无法用setup和teardown来实现了
+
+#### fixture相对于setup和teardown的几点优势
+
+- 命名方式灵活, 不局限于 setup 和 teardown
+
+- conftest.py 配置里可以实现数据共享, 不需要import就能自动找到一些配置
+
+- scope='module' 可以实现多个.py跨文件共享前置, 每个.py文件调用一次
+
+- scope='session' 以实现多个.py跨文件使用一个session来完成多个用例
+
+- scope='function' (默认级别) 使用场景: 用例1需要先登录，用例2不需要登录，用例3需要先登录
+
+```
+
+```
+
+***Fixtures可以选择使用yield语句为测试函数提供它们的值, 而不是return。在这种情况下, yield语句之后的代码块作为拆卸代码执行, 而不管测试结果如何。fixture功能必须只产生一次***
