@@ -3,6 +3,11 @@ Standard python packages
 
 #### [pytest测试框架](https://www.cnblogs.com/yoyoketang/tag/pytest/)
 
+#### 执行用例, 生成报告命令
+```
+pytest --html=report.html --self-contained-html
+```
+
 #### pytest用例规则
 
 - 文件名以test_*.py文件和*_test.py
