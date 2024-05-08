@@ -1,6 +1,20 @@
 # py-package-demo
 Standard python packages
 
+#### [pytest测试框架](https://www.cnblogs.com/yoyoketang/tag/pytest/)
+
+#### pytest用例规则
+
+- 文件名以test_*.py文件和*_test.py
+
+- 以test_开头的函数
+
+- 以Test开头的类，test_开头的方法，并且不能带有__init__ 方法
+
+- 所有的包pakege必须要有__init__.py文件
+
+- 断言使用assert
+
 #### 打包
 ```
 py -m pip install --upgrade build
