@@ -166,9 +166,93 @@ if __name__ == "__main__":
 
 - scope='function' (默认级别) 使用场景: 用例1需要先登录，用例2不需要登录，用例3需要先登录
 
-```
+#### fixture 与 yield 关键字, 实现 teardown 操作
 
 ```
+import pytest
+
+@pytest.fixture(scope='module')
+def open():
+    print('打开浏览器, 并且打开百度首页')
+    
+    yield
+    print('执行teardown!')
+    print('最后关闭浏览器')
+    
+def test_s1(open):
+    print('用例1: 搜索 python-1')
+    
+def test_s2(open):
+    print('用例2: 搜索 python-2')
+    
+def test_s3(open):
+    print('用例3: 搜索 python-3')
+    
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_f1.py'])
+```
+
+##### yield 遇到异常
+
+- 如果第一个用例异常, 不影响其他用例执行
+
+```
+import pytest
+
+@pytest.fixture(scope='module')
+def open():
+    print('打开浏览器, 并且打开百度首页')
+    
+    yield
+    print('执行teardown!')
+    print('最后关闭浏览器')
+    
+def test_s1(open):
+    print('用例1: 搜索 python-1')
+    
+    raise NameError
+def test_s2(open):
+    print('用例2: 搜索 python-2')
+    
+def test_s3(open):
+    print('用例3: 搜索 python-3')
+    
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_f1.py'])
+```
+
+- 如果在setup就异常了, 那么是不会去执行yield后面的teardown内容了
+
+- yield也可以配合with语句使用
+```
+import smtplib
+import pytest
+
+@pytest.fixture(scope='module')
+def smtp():
+    with smtplib.SMTP('smtp.gmail.com') as smtp:
+        yield smtp
+```
+
+#### addfinalizer 实现 teardown 操作
+
+1. 除了 yield 可以实现 teardown, 在 request-context 对象中注册 addfinalizer 方法也可以实现终结函数
+```
+import smtplib
+import pytest
+
+@pytest.fixture(scope='module')
+def smtp_connection(request):
+    smtpConn = smtplib.SMTP('smtp.gmail.com', 587, timeout=5)
+    def fin():
+        print('teardown smtpConn')
+        
+    request.addfinalizer(fin)
+    return smtpConn
+```
+
+2. yield 和 addfinalizer 方法都是在测试完成后调用相应的代码
+
 
 ***Fixtures可以选择使用yield语句为测试函数提供它们的值, 而不是return。在这种情况下, yield语句之后的代码块作为拆卸代码执行, 而不管测试结果如何。fixture功能必须只产生一次***
 
@@ -181,9 +265,3 @@ if __name__ == "__main__":
 - conftest.py 与运行的用例要在同一个 package 下, 并且有 __init__.py 文件
 
 - 不需要 import 导入 conftest.py, pytest 用例会自动查找
-
-参考脚本代码设计
-
-```
-
-```
