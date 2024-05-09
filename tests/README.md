@@ -1796,3 +1796,63 @@ pytest -n 3
 ```
 pytest -n 3 --html=report.html --self-contained-html
 ```
+
+### pytest-repeat(重复执行用例)
+
+在做功能测试的时候, 经常会遇到某个模块不稳定, 偶然会出现一些bug, 对于这种问题我们会针对此用例反复执行多次, 最终复现出问题来。自动化运行用例时, 也会出现偶然的bug, 可以针对单个用例, 或者针对某个模块的用例重复执行多次
+
+#### pytest-repeat
+
+pytest-repeat 是 pytest 的一个插件, 用于重复执行单个用例, 或多个测试用例, 并指定重复次数
+
+1. 安装
+```
+pip install pytest-repeat
+```
+
+2. 执行 x 次
+```
+pytest --count=10 test_01.py
+```
+
+3. `--repeat-scope` 重复执行的作用域
+
+- `function` (默认)范围针对每个用例重复执行, 再执行下一个用例
+
+- `class` 以class为用例集合单位, 重复执行class里面的用例, 再执行下一个
+
+- `module` 以模块为单位, 重复执行模块里面的用例, 再执行下一个
+
+- `session` 重复整个测试会话, 即所有收集的测试执行一次, 然后所有这些测试再次执行等等
+
+#### 装饰器 @pytest.mark.repeat(count)
+
+如果要在代码中标记要重复多次的测试, 可以使用 `@pytest.mark.repeat(count)`
+
+```
+# test_1_baidu.py
+import pytest
+import time
+
+def test_01(start, open_baidu):
+    print("测试用例test_01")
+    time.sleep(0.5)
+    assert start == "yoyo"
+
+@pytest.mark.repeat(5)
+def test_02(start, open_baidu):
+    print("测试用例test_02")
+    time.sleep(0.5)
+    assert start == "yoyo"
+
+if __name__ == "__main__":
+    pytest.main(["-s", "test_1_baidu.py"])
+```
+
+#### 重复测试直到失败
+
+如果正在尝试诊断间歇性故障, 那么一遍又一遍地运行相同的测试直到失败是有用的。可以将 pytest 的 -x 选项与 pytest-repeat 结合使用, 以强制测试运行器在第一次失败时的停止
+
+```
+pytest --count=1000 -x test_file.py
+```
