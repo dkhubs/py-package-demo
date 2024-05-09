@@ -1,11 +1,11 @@
 # pytest测试框架
 
-### 安装
+### 1. 安装
 ```
 pip install pytest
 ```
 
-### 用例设计原则
+### 2. 用例设计原则
 
 - 文件名以test_*.py文件和*_test.py
 
@@ -68,7 +68,7 @@ pytest -x test_class.py
 pytest --maxfail=1
 ```
 
-### 前置(setup)和后置(teardown)
+### 3. 前置(setup)和后置(teardown)
 
 - 模块级: setup_module/teardown_module, 开始于模块始末, 全局的
 
@@ -150,7 +150,7 @@ if __name__ == "__main__":
 
 - 类里面的(setup/teardown)运行在调用方法的前后
 
-### fixture:自定义测试用例的预置条件
+### 4. fixture:自定义测试用例的预置条件
 
 前面一篇讲到用例加setup和teardown可以实现在测试用例之前或之后加入一些操作, 但这种是整个脚本全局生效的, 如果我想实现以下场景: 用例1需要先登录，用例2不需要登录，用例3需要先登录。很显然这就无法用setup和teardown来实现了
 
@@ -256,7 +256,7 @@ def smtp_connection(request):
 
 ***Fixtures可以选择使用yield语句为测试函数提供它们的值, 而不是return。在这种情况下, yield语句之后的代码块作为拆卸代码执行, 而不管测试结果如何。fixture功能必须只产生一次***
 
-### conftest.py配置
+### 5. conftest.py配置
 
 单独管理预置的操作场景, pytest默认读取conftest.py里面的配置。注意事项:
 
@@ -266,7 +266,7 @@ def smtp_connection(request):
 
 - 不需要 import 导入 conftest.py, pytest 用例会自动查找
 
-### pytest生成html报告
+### 6. pytest生成html报告
 
 pytest-HTML是一个插件，pytest用于生成测试结果的HTML报告
 
@@ -358,7 +358,7 @@ pip install pytest-rerunfailures
 
 `pytest --reruns 1 --html=report.html --self-contained-html`
 
-### 参数化
+### 7. 参数化
 
 1. pytest.mark.parametrize 装饰器可以实现测试用例参数化
 
@@ -403,7 +403,7 @@ if __name__ == '__main__':
     pytest.main(['-s', 'test_canshu1.py'])
 ```
 
-### 命令行传参
+### 8. 命令行传参
 
 命令行参数是根据命令行选项将不同的值传递给测试函数, 比如平常在cmd执行"pytest --html=report.html", 这里面的"--html=report.html"就是从命令行传入的参数: 对应的参数名称是html, 参数值是report.html
 
@@ -452,7 +452,7 @@ if __name__ == '__main__':
 
 `pytest -s test_sample.py --cmdopt type2`
 
-### assert 断言
+### 9. assert 断言
 
 断言是写自动化测试基本最重要的一步，一个用例没有断言，就失去了自动化测试的意义了
 
@@ -555,7 +555,7 @@ if __name__ == '__main__':
     pytest.main(['-s', 'test_assert1.py'])
 ```
 
-### skip 跳过用例
+### 10. skip 跳过用例
 
 #### skip
 
@@ -666,4 +666,146 @@ pytestmark = pytest.mark.skipif(sys.platform == 'win32', 'tests for linux -> onl
 
 ```
 pexpect = pytest.importorskip('pexpect')
+```
+
+### 11. 函数传参和fixture传参--request
+
+函数的作用: 提高代码的复用性, 方便在用例中按需调用
+
+#### 登录函数传参
+
+1. 把登录功能独立出来, 单独写一个函数: 传入2个参数user和pwd, 写用例的时候调用登录函数, 输入几组user, pwd参数化登录用例
+
+测试用例传参需要用装饰器@pytest.mark.parametrize, 里面写两个参数
+
+- 第一个参数是字符串, 多个参数中间用逗号隔开
+
+- 第二个参数是list, 多组数据用元组类型
+
+```
+# test_01.py
+
+# coding: utf-8
+
+import pytest
+
+# 测试登录数据
+testLoginData = [('admin', '111111'), ('zhangsan', '')]
+
+def login(user, pwd):
+    print('登录账号：%s, 密码: %s' % (user, pwd))
+    if pwd:
+        return True
+    else:
+        return False
+    
+@pytest.mark.parametrize('user, pwd', testLoginData)
+def test_login(user, pwd):
+    res = login(user, pwd)
+    assert res == True, '失败原因: 密码为空'
+    
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_01.py'])
+```
+
+#### request参数
+
+如果想把登录操作放到前置操作里, 也就是用到@pytest.fixture装饰器, 传参就用默认的request参数
+
+```
+# coding: utf-8
+
+import pytest
+
+# 测试登录数据
+testLoginData = ['admin', 'zhangsan']
+
+@pytest.fixture(scope='module')
+def login(request):
+    user = request.param
+    print('登录账户：%s' % user)
+    return user
+    
+@pytest.mark.parametrize('login', testLoginData, indirect=True)
+def test_login(login):
+    res = login
+    print('测试用例中Login的返回值: %s' % res)
+    assert res != ''
+    
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_01.py'])
+```
+
+***添加indirect=True参数是为了把login当成一个函数去执行, 而不是一个参数***
+
+#### request传2个参数
+
+如果用到@pytest.fixture里面用2个参数的情况, 可以把多个参数用一个字典去存储, 这样最终还是只传一个参数; 不同的参数再从字典里面取对应key值就行, 如: user = request,param['user']
+
+```
+# coding: utf-8
+
+import pytest
+
+# 测试登录数据
+testLoginData = [{'user':'admin', 'pwd':'111111'}, {'user':'zhangsan', 'pwd':''}]
+
+@pytest.fixture(scope='module')
+def login(request):
+    user = request.param['user']
+    pwd = request.param['pwd']
+    print('登录账户：%s, 密码: %s' % (user, pwd))
+    if pwd:
+        return True
+    else:
+        return False
+    
+# indirect=True 声明login是一个fixture
+@pytest.mark.parametrize('login', testLoginData, indirect=True)
+def test_login(login):
+    res = login
+    print('测试用例中Login的返回值: %s' % res)
+    assert res, '失败原因: 密码为空'
+    
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_01.py'])
+```
+
+***如果要用到login里面的返回值, def test_login(login)时, 传入login参数, 函数返回值就是login了***
+
+#### 多个fixture
+
+用例上面可以同时放多个fixture(也就是前置操作): 可以支持装饰器叠加, 使用parametrize装饰器叠加时, 用例组合是2个参数个数相乘
+
+```
+# coding: utf-8
+
+import pytest
+
+# 测试登录数据
+testUser = ['admin', 'zhangsan']
+testPwd = ['123456', '654321']
+
+@pytest.fixture(scope='module')
+def input_user(request):
+    user = request.param
+    print('登录账户: %s' % user)
+    return user
+
+@pytest.fixture(scope='module')
+def input_pwd(request):
+    pwd = request.param
+    print('登录密码: %s' % pwd)
+    return pwd
+    
+@pytest.mark.parametrize('input_user', testUser, indirect=True)
+@pytest.mark.parametrize('input_pwd', testPwd, indirect=True)
+def test_login(input_user, input_pwd):
+    a = input_user
+    b = input_pwd
+    print('测试数据 a->%s, b->%s' % (a, b))
+    assert b
+    
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_01.py'])
 ```
