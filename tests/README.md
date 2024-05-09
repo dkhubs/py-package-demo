@@ -1548,4 +1548,95 @@ def first():
     return a
 ```
 
-### 
+### conftest.py 的作用范围
+
+一个测试工程下是可以有多个 conftest.py 的文件, 一般在工程根目录放一个 conftest.py 起到全局作用。在不同的测试子目录也可以放 conftest.py, 作用范围只在该层级以及以下目录生效
+
+#### conftest 层级关系
+
+在 web_conf+py 项目工程下建两个子项目 baidu、blog, 并且每个目录下都放一个 conftest.py 和 __init__.py (python的每个package必须要有__init__.py)
+
+```
+web_conf_py 是工程名称
+
+├─baidu
+│  │  conftest.py
+│  │  test_1_baidu.py
+│  │  __init__.py
+│  
+│          
+├─blog
+│  │  conftest.py
+│  │  test_2_blog.py
+│  │  __init__.py
+│   
+│  conftest.py
+│  __init__.py
+
+```
+
+1. 案例分析
+
+web_conf_py 工程下 conftest.py 文件代码案例
+
+```
+import pytest
+
+@pytest.fixture(scope='session')
+def start():
+    print('\n打开首页')
+```
+
+baidu目录下 conftest.py 和 test_1_baidu.py
+
+```
+# web_conf_py/baidu/conftest.py
+import pytest
+
+@pytest.fixture(scope='session')
+def open_baidu():
+    print('打开百度页面_session')
+
+# web_conf_py/baidu/test_1_baidu.py
+import pytest
+
+def test_01(start, open_baidu):
+    print('测试用例 test_01')
+    assert 1
+
+def test_02(start, open_baidu):
+    print('测试用例 test_02')
+    assert 1
+
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_1_baidu.py'])
+```
+
+blog 目录下 conftest.py 和 test_2_blog.py 代码
+
+```
+# web_conf_py/blog/conftest.py
+import pytest
+
+@pytest.fixture(scope='function')
+def open_blog():
+    print('打开 blog 页面 _function')
+
+# web_conf_py/blog/test_2_blog.py
+import pytest
+
+def test_03(start, open_blog):
+    print('测试用例 test_03')
+    assert 1
+
+def test_04(start, open_blog):
+    print('测试用例 test_04')
+    assert 1
+
+def test_05(start, open_baidu):
+    print('测试用例 test_05, 跨模块调用 baidu')
+    assert 1
+
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_2_blog.py'])
+```
