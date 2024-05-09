@@ -2010,3 +2010,143 @@ def pytest_collection_modifyitems(session, items):
 ```
 
 3. 重新执行 `pytest -s`
+
+### Hooks函数统计测试结果(pytest_terminal_summary)
+
+用例执行完成后, 希望能获取到执行的结果, 这样就方便我们快速统计用例的执行情况。可以把获取到的结果当成总结报告, 发邮件的时候可以先统计测试结果, 再加上html的报告
+
+#### pytest_terminal_summary
+
+```
+# test_a.py
+
+def test_a_1():
+    print("测试用例a_1")
+    assert 1 == 1
+
+def test_a_2():
+    print("测试用例a_2")
+    assert 1 == 1
+    
+def test_3():
+    print('测试用例3333')
+    
+def test_4():
+    print('测试用例4444')
+    assert 1 == 2
+
+# test_b.py
+import time
+def test_b_2():
+    print("测试用例b_2")
+    time.sleep(3)
+
+def test_b_1():
+    print("测试用例b_1")
+    time.sleep(3)
+    assert 1 == 2
+
+# conftest.py
+import time
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    print(terminalreporter.stats)
+    print('total:', terminalreporter._numcollected)
+    print('passed:', len(terminalreporter.stats.get('passed', [])))
+    print('failed:', len(terminalreporter.stats.get('failed', [])))
+    print('error:', len(terminalreporter.stats.get('error', [])))
+    print('skipped:', len(terminalreporter.stats.get('skipped', [])))
+    # terminalreporter._sessionstarttime 会话开始时间
+    duration = time.time() - terminalreporter._sessionstarttime
+    print('total times:', duration, 'seconds')
+```
+
+#### setup 和 teardown 异常情况
+
+1. setup
+
+```
+# test_b.py
+import time
+import pytest
+
+@pytest.fixture(scope="function")
+def setup_demo():
+    raise TypeError("ERROR!")
+
+def test_5(setup_demo):
+    print("测试用例55555555")
+    time.sleep(3)
+
+
+def test_6():
+    print("测试用例66666666")
+    time.sleep(3)
+    assert 1 == 2
+```
+
+2. teardown
+
+```
+import time
+import pytest
+
+@pytest.fixture(scope="function")
+def setup_demo():
+    yield 
+    raise TypeError("ERROR!")
+
+def test_5(setup_demo):
+    print("测试用例55555555")
+    time.sleep(3)
+
+
+def test_6():
+    print("测试用例66666666")
+    time.sleep(3)
+    assert 1 == 2
+
+# conftest.py
+import time
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    '''收集测试结果'''
+    # print(terminalreporter.stats)
+    print("total:", terminalreporter._numcollected)
+    print('passed:', len([i for i in terminalreporter.stats.get('passed', []) if i.when != 'teardown']))
+    print('failed:', len([i for i in terminalreporter.stats.get('failed', []) if i.when != 'teardown']))
+    print('error:', len([i for i in terminalreporter.stats.get('error', []) if i.when != 'teardown']))
+    print('skipped:', len([i for i in terminalreporter.stats.get('skipped', []) if i.when != 'teardown']))
+    print('成功率：%.2f' % (len(terminalreporter.stats.get('passed', []))/terminalreporter._numcollected*100)+'%')
+
+    # terminalreporter._sessionstarttime 会话开始时间
+    duration = time.time() - terminalreporter._sessionstarttime
+    print('total times:', duration, 'seconds')
+```
+
+3. 保存测试结果
+
+```
+import time
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    '''收集测试结果'''
+    # print(terminalreporter.stats)
+    total = terminalreporter._numcollected
+    passed= len([i for i in terminalreporter.stats.get('passed', []) if i.when != 'teardown'])
+    failed=len([i for i in terminalreporter.stats.get('failed', []) if i.when != 'teardown'])
+    error=len([i for i in terminalreporter.stats.get('error', []) if i.when != 'teardown'])
+    skipped=len([i for i in terminalreporter.stats.get('skipped', []) if i.when != 'teardown'])
+    successful = len(terminalreporter.stats.get('passed', []))/terminalreporter._numcollected*100
+    # terminalreporter._sessionstarttime 会话开始时间
+    duration = time.time() - terminalreporter._sessionstarttime
+    print('total times: %.2f' % duration, 'seconds')
+
+    with open("result.txt", "w") as fp:
+        fp.write("TOTAL=%s" % total+"\n")
+        fp.write("PASSED=%s" % passed+"\n")
+        fp.write("FAILED=%s" % failed+"\n")
+        fp.write("ERROR=%s" % error+"\n")
+        fp.write("SKIPPED=%s" % skipped+"\n")
+        fp.write("SUCCESSFUL=%.2f%%" % successful+"\n")
+        fp.write("TOTAL_TIMES=%.2fs" % duration)
+```
