@@ -1445,3 +1445,82 @@ def test_1(user):
 if __name__ == '__main__':
     pytest.main(['-s', 'test_fixture3.py'])
 ```
+
+### 多个fixture及相互调用
+
+#### 使用多个fixture
+
+如果用例需要用到多个fixture的返回数据, fixture也可以
+
+1. return一个元组、list或字典, 然后从里面取出对应数据
+
+```
+import pytest
+
+@pytest.fixture()
+def user():
+    print('获取用户名')
+    a = 'yoyo'
+    b = '123456'
+    return (a, b)
+
+def test_1(user):
+    u = user[0]
+    p = user[1]
+    print('测试账户: %s, 密码: %s' % (u, p))
+    assert u == 'yoyo'
+    
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_fixture4.py'])
+```
+
+2. 分开定义成多个fixtuer, 然后test_用例传入多个fixture参数
+
+```
+import pytest
+
+@pytest.fixture()
+def user():
+    print('获取用户名')
+    a = 'yoyo'
+    return a
+
+@pytest.fixture()
+def pwd():
+    print('获取密码')
+    b = '123456'
+    return b
+
+def test_01(user, pwd):
+    print('测试账号: %s, 密码: %s' % (user, pwd))
+    assert user == 'yoyo'
+    
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_fixture5.py'])
+```
+
+#### fixture之间互相调用
+
+```
+import pytest
+
+@pytest.fixture()
+def first():
+    print('获取用户名')
+    a = 'yoyo'
+    return a
+
+@pytest.fixture()
+def second(first):
+    a = first
+    b = '123456'
+    return (a, b)
+
+def test_1(second):
+    print('测试账户: %s, 密码: %s' % (second[0], second[1]))
+    
+    assert second[0] == 'yoyo'
+    
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_fixture6.py'])
+```
