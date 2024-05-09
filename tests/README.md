@@ -809,3 +809,58 @@ def test_login(input_user, input_pwd):
 if __name__ == '__main__':
     pytest.main(['-s', 'test_01.py'])
 ```
+
+### 自定义标记 mark
+
+自定义标记可以把一个web项目划分多个模块, 然后指定模块名称执行。一个大项目自动化用例时, 可以划分多个模块, 也可以使用标记功能, 标明哪些是模块1用例、哪些是模块2的, 运行代码时指定mark名称运行就可以
+
+#### mark标记
+
+1. 以下用例, 标记test_send_http()为webtest
+
+```
+# test_server.py
+
+# coding: utf-8
+
+import pytest
+
+@pytest.mark.webtest
+def test_send_http():
+    pass
+
+def test_something_quick():
+    pass
+
+def test_another():
+    pass
+
+class TestClass:
+    def test_method(self):
+        pass
+    
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_server.py', '-m=webtest'])
+```
+
+#### `::` 指定函数节点id
+
+1. 例如想指定运行某个.py模块下, 类里面的一个用例
+
+`pytest -v test_server.py::TestClass::test_method`
+
+2. 运行整个类
+
+`pytest -v test_server.py::TestClass`
+
+3. 也能选择多个节点运行, 多个节点中间用空格隔开
+
+`pytest -v test_server.py::TestClass test_server.py::test_send_http`
+
+4. -k 匹配用例名称
+
+- 匹配用例名称包含http的 `pytest -v -k http`
+
+- 排除用例名称包含 send_http的 `pytest -k "not send_http" -v`
+
+- 同时选择匹配 http 和 quick `pytest -k "http or quick" -v`
