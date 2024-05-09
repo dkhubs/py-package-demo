@@ -1653,3 +1653,146 @@ if __name__ == '__main__':
 #### `--ff`
 
 --failed-first 运行所有测试，但首先运行上次运行失败的测试(这可能会重新测试，从而导致重复的fixture setup/teardown)
+
+### pytest分布式执行插件 pytest-xdist
+
+1. 安装
+
+```
+pip install pytest-xdist
+```
+
+2. [pytest-xdist](https://github.com/pytest-dev/pytest-xdist/blob/master/OVERVIEW.md) 插件扩展了一些独特的测试执行模式 pytest
+
+- 测试运行并行化: 如果有多个CPU或主机, 则可以将它们用于组合测试运行, 加快运行速度
+
+- --looponfail: 在子进程中重复运行测试, 每次运行之后, pytest会等待, 直到项目中的文件发生更改, 然后重新运行以前失败的测试。重复此过程直到所有测试通过, 之后再次执行完整运行
+
+- 多平台覆盖: 您可以指定不同的Python解释器或不同的平台, 并在所有平台上并行运行测试。在远程运行测试之前, pytest有效地将程序源代码`rsyncs`到远程位置, 报告所有测试结果并显示给本地终端
+
+3. 并行测试
+
+多CPU并行执行用例, 直接加个-n参数即可, 后面num参数就是并行数量, 比如num设置为3
+
+```
+pytest -n 3
+```
+
+4. 运行以下代码, 项目结构如下
+
+```
+web_conf_py是项目工程名称
+│  conftest.py
+│  __init__.py
+│              
+├─baidu
+│  │  conftest.py
+│  │  test_1_baidu.py
+│  │  test_2.py
+│  │  __init__.py 
+│          
+├─blog
+│  │  conftest.py
+│  │  test_2_blog.py
+│  │  __init__.py   
+```
+
+代码参考
+
+```
+# web_conf_py/conftest.py
+import pytest
+
+@pytest.fixture(scope="session")
+def start():
+    print("\n打开首页")
+    return "yoyo"
+
+# web_conf_py/baidu/conftest.py
+import pytest
+
+@pytest.fixture(scope="session")
+def open_baidu():
+    print("打开百度页面_session")
+
+# web_conf_py/baidu/test_1_baidu.py
+import pytest
+import time
+
+def test_01(start, open_baidu):
+    print("测试用例test_01")
+    time.sleep(1)
+    assert start == "yoyo"
+
+def test_02(start, open_baidu):
+    print("测试用例test_02")
+    time.sleep(1)
+    assert start == "yoyo"
+
+if __name__ == "__main__":
+    pytest.main(["-s", "test_1_baidu.py"])
+
+
+# web_conf_py/baidu/test_2.py
+import pytest
+import time
+
+def test_06(start, open_baidu):
+    print("测试用例test_01")
+    time.sleep(1)
+    assert start == "yoyo"
+def test_07(start, open_baidu):
+    print("测试用例test_02")
+    time.sleep(1)
+    assert start == "yoyo"
+
+if __name__ == "__main__":
+    pytest.main(["-s", "test_2.py"])
+
+
+# web_conf_py/blog/conftest.py
+import pytest
+
+@pytest.fixture(scope="function")
+def open_blog():
+    print("打开blog页面_function")
+
+# web_conf_py/blog/test_2_blog.py
+
+import pytest
+import time
+def test_03(start, open_blog):
+    print("测试用例test_03")
+    time.sleep(1)
+    assert start == "yoyo"
+
+def test_04(start, open_blog):
+    print("测试用例test_04")
+    time.sleep(1)
+    assert start == "yoyo"
+
+def test_05(start, open_blog):
+    '''跨模块调用baidu模块下的conftest'''
+    print("测试用例test_05,跨模块调用baidu")
+    time.sleep(1)
+    assert start == "yoyo"
+
+if __name__ == "__main__":
+    pytest.main(["-s", "test_2_blog.py"])
+```
+
+1. 正常运行:耗时7秒
+```
+pytest
+```
+
+2. 并行运行:耗时不到4秒
+```
+pytest -n 3
+```
+
+3. 测试报告
+
+```
+pytest -n 3 --html=report.html --self-contained-html
+```
