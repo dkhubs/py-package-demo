@@ -1366,3 +1366,82 @@ def pytest_runtest_makereport(item):
 ```
 
 执行用例生成报告 `pytest --html=report.html --self-contained-html`
+
+### fixtue详细介绍
+
+fixture是pytest的核心功能, 也是亮点功能, 熟练掌握fixture的使用方法, pytest用起来才会得心应手
+
+#### fixture简介
+
+fixture的目的是提供一个固定基线, 该基线上测试可以可靠地和重复地执行
+
+- 有独立的命名, 并通过声明它们从测试函数、模块、类或整个项目中的使用来激活
+
+- 按模块化的方式实现, 每个fixture都可以互相调用
+
+- fixture的范围从简单的单元扩展到复杂的功能测试, 允许根据配置和组件选项对fixture和测试用例进行参数化, 或者跨函数function、类class、模块module或整个测试会话session范围
+
+#### fixtuer作为参数传入
+
+定义fixture跟定义普通函数差不多, 唯一区别就是在函数上加个装饰器@pytest.fixture()
+
+- fixture命名不要用test_开头, 跟用例区分开
+
+- fixture是可以有返回值的, 如果没有return默认返回None。用例调用fixture的返回值, 直接就是把fixture的函数名称当成变量名称
+
+```
+import pytest
+
+@pytest.fixture()
+def user():
+    print('获取用户名称')
+    a = 'yoyo'
+    return a
+
+def test_1(user):
+    assert user == 'yoyo'
+    
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_fixture1.py'])
+```
+
+#### error 和 failed 区别
+
+测试结果一般有三种: passed、failed、error(skip的用例除外)
+
+1. 如果在test_用例里面断言失败, 那就是failed
+
+```
+import pytest
+
+@pytest.fixture()
+def user():
+    print('获取用户名')
+    a = 'yoyo'
+    return a
+
+def test_1(user):
+    assert user == 'yoyo111' # 用例失败就是failed
+    
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_fixture2.py'])
+```
+
+2. 如果在fixture里面断言失败了, 那就是error
+
+```
+import pytest
+
+@pytest.fixture()
+def user():
+    print('获取用户名')
+    a = 'yoyo'
+    assert a == 'yoyo123' # fixture失败就是error
+    return a
+
+def test_1(user):
+    assert user == 'yoyo'
+    
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_fixture3.py'])
+```
