@@ -451,3 +451,219 @@ if __name__ == '__main__':
 2. 命令行传参数有两种写法，还有一种分成2个参数也可以的, 参数和名称用空格隔开
 
 `pytest -s test_sample.py --cmdopt type2`
+
+### assert 断言
+
+断言是写自动化测试基本最重要的一步，一个用例没有断言，就失去了自动化测试的意义了
+
+什么是断言呢？简单来讲就是实际结果和期望结果去对比，符合预期那就测试pass，不符合预期那就测试 failed
+
+#### assert
+
+pytest允许您使用标准Python断言来验证Python测试中的期望和值
+
+```
+# test_assert1.py
+
+def f():
+    return 3
+
+def test_function():
+    assert f() == 5
+```
+
+#### 异常信息
+
+接下来再看一个案例，如果想在异常的时候，输出一些提示信息，这样报错后，就方便查看是什么原因了
+
+```
+def f():
+    return 3
+
+def test_function():
+
+    a = f()
+    assert a % 2 == 0, "判断a为偶数，当前a的值为：%s"%a
+```
+
+#### 异常断言
+
+```
+import pytest
+
+def test_zero_division():
+    with pytest.raises(ZeroDivisionError) as excinfo:
+        1 / 0
+        
+    assert excinfo.type == ZeroDivisionError
+    assert 'division by zero' in str(excinfo.value)
+```
+
+excinfo 是一个异常信息实例，它是围绕实际引发的异常的包装器。主要属性是.type、.value 和 .traceback
+
+***注意：断言type的时候，异常类型是不需要加引号的，断言value值的时候需转str***
+
+在上下文管理器窗体中，可以使用关键字参数消息指定自定义失败消息：
+
+```
+with pytest.raises(ZeroDivisionError, message="Expecting ZeroDivisionError"):
+    pass
+
+结果：Failed: Expecting ZeroDivisionError
+```
+
+#### 常用断言
+
+pytest里面断言实际上是python里面的assert断言方法, 常用的有以下几种
+
+- assert xx 判断xx为真
+
+- assert not xx 判断xx不为真
+
+- assert a in b 判断b包含a
+
+- assert a == b 判断a等于b
+
+- assert a != b 判断a不等于b
+
+```
+import pytest
+
+def is_true(a):
+    if a > 0:
+        return True
+    else:
+        return False
+    
+def test_01():
+    a = 5
+    b = -1
+    assert is_true(a)
+    assert not is_true(b)
+    
+def test_02():
+    a = 'hello'
+    b = 'hello world'
+    assert a in b
+    
+def test_03():
+    a = 5
+    b = 6
+    assert a != b
+    
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_assert1.py'])
+```
+
+### skip 跳过用例
+
+#### skip
+
+1. 跳过测试函数最简单的方式是使用装饰器(reason参数可选填)
+```
+@pytest.mark.skip(reason='no way of currently testing this')
+def test_the_unknown():
+    ...
+```
+
+2. 也可以在测试执行或设置期间通过调用来强制跳过pytest.skip(reason)功能
+```
+def test_function():
+    if not valid_config():
+        pytest.skip("unsupported configuration")
+```
+
+3. 也可以使用命令性方法, pytest.skip(reason, allow_module_level = True)跳过整个模块级别
+```
+import pytest
+if not pytest.config.getoption("--custom-flag"):
+    pytest.skip("--custom-flag is missing, skipping tests", allow_module_level=True)
+```
+
+在导入时间无法评估跳过条件时, 该方法很有用
+
+#### skipif
+
+1. 有条件地跳过某些内容, 使用`-rs`时出现在摘要中
+
+```
+import sys
+import pytest
+
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+def test_function():
+    ...
+```
+
+2. 可以在模块之间共享skipif标记, 参考以下案例
+
+```
+import mymodule
+minversion = pytest.mark.skipif(mymodule.__versioninfo__ < (1, 1), reason='at least mymodule-1.1 required')
+@minversion
+def test_funtion():
+    ...
+```
+
+导入标记在另一个测试模块中重复使用它
+```
+from test_mymudlue import minversion
+@minversion
+def test_anotherfunction():
+    ...
+```
+
+***对于较大的测试套件, 通常最好有一个文件来定义标记, 然后一致适用于整个测试套件***
+
+#### skip类或模块
+
+1. 在类上使用skipif标记, 如果条件为真则此标记将为该类的每个测试方法生成跳过结果
+
+```
+import sys
+import pytest
+@pytest.mark.skipif(sys.platform == 'win32', reason='does not run on windows')
+class TestPosixCalls(object):
+    def test_function(self):
+        'will not be setup or run under "win32" platform'
+```
+
+**不要在使用继承的类上使用skipif, pytest中的一个已知错误可能会导致超类中的意外行为**
+
+2. 在全局级别使用pytestmark名称, 跳过模块的所有测试功能
+
+#### skip文件或目录
+
+有时您可能需要跳过整个文件或目录, 例如:如果测试依赖于特定于Python的版本功能或包含您不希望pytest运行的代码
+
+#### skip缺少导入依赖项
+
+1. 可以在模块级别或测试设置功能中使用以下帮助程序, 如果无法在此处导入docutils, 则会导致测试跳过结果
+```
+docutils = pytest.importorskip('docutils')
+```
+
+2. 跳过库的版本号, 将从指定模块的__version__属性中读取版本
+```
+docutils = pytest.importorskip('docutils', minversion='0.3')
+```
+
+#### Summary -- 介绍在不同情况下跳过模块中的测试
+
+1. 无条件地跳过模块中的所有测试
+
+```
+pytestmark = pytest.mark.skip('all tests still WIP')
+```
+
+2. 根据某些条件跳过模块中的所有测试
+
+```
+pytestmark = pytest.mark.skipif(sys.platform == 'win32', 'tests for linux -> only')
+```
+
+3. 如果缺少某些导入, 则跳过模块中的所有测试
+
+```
+pexpect = pytest.importorskip('pexpect')
+```
