@@ -2,29 +2,38 @@
 
 import pytest
 
-# 测试登录数据
-testUser = ['admin', 'zhangsan']
-testPwd = ['123456', '654321']
+canshu = [{'user':'admin', 'pwd':''}]
 
 @pytest.fixture(scope='module')
-def input_user(request):
-    user = request.param
-    print('登录账户: %s' % user)
-    return user
-
-@pytest.fixture(scope='module')
-def input_pwd(request):
-    pwd = request.param
-    print('登录密码: %s' % pwd)
-    return pwd
+def login(request):
+    user = request.param['user']
+    pwd = request.param['pwd']
+    print('正在操作登录, 账户: %s, 密码: %s' % (user, pwd))
+    if pwd:
+        return True
+    else:
+        return False
     
-@pytest.mark.parametrize('input_user', testUser, indirect=True)
-@pytest.mark.parametrize('input_pwd', testPwd, indirect=True)
-def test_login(input_user, input_pwd):
-    a = input_user
-    b = input_pwd
-    print('测试数据 a->%s, b->%s' % (a, b))
-    assert b
+@pytest.mark.parametrize('login', canshu, indirect=True)
+class Test_xx():
+    def test_01(self, login):
+        res = login
+        print('用例1: %s' % res)
+        assert res == True
+        
+    def test_02(self, login):
+        res = login
+        print('用例2: %s' % res)
+        if not res:
+            pytest.xfail('登录不成功, 标记为xfail')
+        assert 1 == 1
+        
+    def test_03(self, login):
+        res = login
+        print('用例3: %s' % res)
+        if not res:
+            pytest.xfail('登录不成功, 标记为xfail')
+        assert 1 == 1
     
 if __name__ == '__main__':
     pytest.main(['-s', 'test_01.py'])

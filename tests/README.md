@@ -864,3 +864,69 @@ if __name__ == '__main__':
 - 排除用例名称包含 send_http的 `pytest -k "not send_http" -v`
 
 - 同时选择匹配 http 和 quick `pytest -k "http or quick" -v`
+
+### 失败标记 xfail
+
+场景描述: 当用例a失败的时候, 如果用例b和用例c都依赖于a的结果, 那可以直接跳过用例b和c的测试, 直接给它们标记为xfail
+
+#### 用例设计
+
+1. pytest里面用xfail标记用例为失败的用例, 可以直接跳过。基本实现思路
+
+- 把登录写为前置操作
+
+- 对登录的账户和密码参数化, 参数用 canshu = [{'user':'admin', 'pwd':'111'}] 表示
+
+- 多个用例放到一个Test_xx的class里面
+
+- test_01, test_02, test_03全部调用fixture里面的login功能
+
+- test_01测试登录用例
+
+- test_02和test_03执行前用if判断登录的结果, 登录失败就执行, pytest.xfail('登录不成功, 标记为xfail')
+
+```
+# coding: utf-8
+
+import pytest
+
+canshu = [{'user':'admin', 'pwd':'123456'}]
+
+@pytest.fixture(scope='module')
+def login(request):
+    user = request.param['user']
+    pwd = request.param['pwd']
+    print('正在操作登录, 账户: %s, 密码: %s' % (user, pwd))
+    if pwd:
+        return True
+    else:
+        return False
+    
+@pytest.mark.parametrize('login', canshu, indirect=True)
+class Test_xx():
+    def test_01(self, login):
+        res = login
+        print('用例1: %s' % res)
+        assert res == True
+        
+    def test_02(self, login):
+        res = login
+        print('用例2: %s' % res)
+        if not res:
+            pytest.xfail('登录不成功, 标记为xfail')
+        assert 1 == 1
+        
+    def test_03(self, login):
+        res = login
+        print('用例3: %s' % res)
+        if not res:
+            pytest.xfail('登录不成功, 标记为xfail')
+        assert 1 == 1
+    
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_01.py'])
+```
+
+#### 标记为xfail
+
+让pwd参数为空, 再看看登录失败情况的用例, 修改登录的参数
