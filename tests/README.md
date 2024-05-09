@@ -1046,3 +1046,128 @@ class Test_aa():
 if __name__ == '__main__':
     pytest.main(['-s', 'test_03.py'])   
 ```
+
+### 配置文件 pytest.ini
+
+**路径：放在顶层文件夹下**
+
+它是一个固定的文件, 读取配置信息, 按照指定的方式去运行
+
+pytest里面有些文件是非test文件
+
+- pytest.ini pytest的主配置文件, 可以改变pytest的默认行为
+
+- conftest.py 测试用例的一些fixture配置
+
+- __init__.py 识别该文件夹为python的package包
+
+- tox.ini 与 pytest.ini 类似, 用 tox 工具时候才有用
+
+- setup.cfg 也是ini格式文件, 影响setup.py的行为
+
+ini文件基本格式
+
+```
+# 保存为pytest.ini文件
+
+[pytest]
+addopts = -rsxX
+xfail_strict = true
+```
+
+***-rsxX 表示 pytest 报告所有测试用例被跳过、预计失败、预计失败但实际被通过的原因***
+
+#### mark标记
+
+1. 编写用例
+```
+import pytest
+
+@pytest.mark.webtest
+def test_send_http():
+    print("mark web test")
+
+def test_something_quick():
+    pass
+
+def test_another():
+    pass
+
+@pytest.mark.hello
+class TestClass:
+    def test_01(self):
+        print("hello :")
+
+    def test_02(self):
+        print("hello world!")
+
+if __name__ == "__main__":
+    pytest.main(["-v", "test_mark.py", "-m=hello"])
+```
+
+2. 配置标签
+```
+[pytest]
+
+markers =
+    webtest: Run the webtest case
+    hello: Run the hello case
+```
+
+3. 执行 `pytest --markers`
+
+#### 禁用xpass
+
+设置 xfail_strict = true 可以让那些标记为 @pytest.mark.xfail 但实际通过的测试用例被报告为失败
+
+```
+import pytest
+
+def test_hello():
+    print('hello world!')
+    assert 1
+
+@pytest.mark.xfail()
+def test_xfail():
+    a = 'hello'
+    b = 'hello world'
+    assert a == b
+    
+@pytest.mark.xfail()
+def test_xpass():
+    a = 'hello'
+    b = 'hello world!'
+    assert a != b
+    
+if __name__ == '__main__':
+    pytest.main(['-v', 'test_xpass.py'])
+```
+
+test_aa 和 test_bb 这2个用例一个是 `a == b`, 一个是 `a == b`, 两个都标记失败了，我们希望两个用例不用执行全部显示xfail。实际上最后一个却显示xpass。为了让两个都显示xfail，那就加个配置
+
+```
+xfail_strict = true
+```
+
+#### addopts
+
+addopts参数可以更改默认命令行选项, 这个当我们在cmd输入指令去执行用例的时候, 会用到, 比如我想测试完生成报告, 指令比较长
+
+```
+pytest -v --reruns 1 --html=report.html --self-contained-html
+```
+
+每次输入这么多不太好记, 于是可以加到 pytest.ini 里
+
+```
+# pytest.ini
+[pytest]
+
+markers =
+  webtest:  Run the webtest case
+  hello: Run the hello case
+
+ xfail_strict = true
+
+ addopts = -v --reruns 1 --html=report.html --self-contained-html
+```
