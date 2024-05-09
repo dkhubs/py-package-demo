@@ -1,99 +1,24 @@
 import pytest
 
-@pytest.fixture(scope="session")
-def first():
-    print("\n获取用户名,scope为session级别多个.py模块只运行一次")
-    a = "yoyo"
-    return a
-
-# @pytest.fixture()
-# def login():
-#     print('----输入账号、密码登录----')
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
+def pytest_runtest_makereport(item, call):
+    print('---------------------------')
     
-# from selenium import webdriver
-# import pytest
-
-# driver = None
-
-# @pytest.mark.hookwrapper
-# def pytest_runtest_makereport(item):
-#     """当测试失败的时候, 自动截图, 展示到html报告中"""
-#     pytest_html = item.config.pluginmanager.getplugin('html')
-#     outcome = yield
-#     report = outcome.get_result()
-#     extra = getattr(report, 'extra', [])
+    # 获取钩子方法的调用结果
+    out = yield
+    print('用例执行结果', out)
     
-#     if report.when == 'call' or report.when == "setup":
-#         xfail = hasattr(report, 'wasxfail')
-#         if (report.skipped and xfail) or (report.failed and not xfail):
-#             file_name = report.nodeid.replace("::", "_") + ".png"
-#             screenshot = driver.get_screenshot_as_base64()
-#             if file_name:
-#                 html = '<div><img src="data:image/png;base64,%s" alt="screenshot" style="width:600px;height:300px;" ' \
-#                     'onclick="window.open(this.src)" align="right"/></div>' % screenshot
-#                 extra.append(pytest_html.extras.html(html))
-#         report.extra = extra
-        
-# @pytest.fixture(scope='session', autouse=True)
-# def browser(request):
-#     global driver
-#     if driver is None:
-#         driver = webdriver.Chrome()
+    # 从钩子方法的调用结果中获取测试报告
+    report = out.get_result()
+    if report.when == 'call':
+        print('测试报告', report)
+        print('步骤: %s' % report.when)
+        print('nodeid: %s' % report.nodeid)
+        print('description: %s' % str(item.function.__doc__))
+        print('运行结果: %s' % report.outcome)
     
-#     def end():
-#         driver.quit()
-        
-#     request.addfinalizer(end)
-#     return driver
-
-# def pytest_addoption(parser):
-#     parser.addoption('--cmdopt', action='store', default='type1', help='my option: type1 or type2')
-    
-# @pytest.fixture
-# def cmdopt(request):
-#     return request.config.getoption('--cmdopt')
-
-# from datetime import datetime
-# import pytest
-# from py.xml import html
-
-# @pytest.mark.optionalhook
-# def pytest_html_results_table_header(cells):
-#     cells.insert(1, html.th('Description'))
-    # cells.insert(2, html.th('Description'))
-    # cells.insert(1, html.th('Time', class_='sortable time', col='time'))
-    # cells.pop()
-    
-# @pytest.mark.optionalhook
-# def pytest_html_results_table_row(report, cells):
-#     cells.insert(1, html.td(report.description))
-    # cells.insert(2, html.td(report.description))
-    # cells.insert(1, html.td(datetime.utcnow(), class_='col-time'))
-    # cells.pop()
-    
-# @pytest.mark.optionalhook
-# def pytest_runtest_makereport(item, call):
-#     outcome = yield
-#     report = outcome.get_result()
-#     report.description = str(item.function.__doc__)
-    
-
-# @pytest.mark.hookwrapper
-# def pytest_runtest_makereport(item):
-#     """当测试失败的时候, 自动截图, 展示到html报告中"""
-#     pytest_html = item.config.pluginmanager.getplugin('html')
-#     outcome = yield
-#     report = outcome.get_result()
-#     extra = getattr(report, 'extra', [])
-    
-#     if report.when == 'call' or report.when == "setup":
-#         xfail = hasattr(report, 'wasxfail')
-#         if (report.skipped and xfail) or (report.failed and not xfail):
-#             file_name = report.nodeid.replace("::", "_") + ".png"
-#             screenshot = driver.get_screenshot_as_base64()
-#             if file_name:
-#                 html = '<div><img src="data:image/png;base64,%s" alt="screenshot" style="width:600px;height:300px;" ' \
-#                     'onclick="window.open(this.src)" align="right"/></div>' % screenshot
-#                 extra.append(pytest_html.extras.html(html))
-#         report.extra = extra
-#         report.description = str(item.function.doc)
+@pytest.fixture(scope='session', autouse=True)
+def fix_a():
+    print('setup前置操作')
+    yield
+    print('setup后置操作')

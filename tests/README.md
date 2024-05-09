@@ -1856,3 +1856,106 @@ if __name__ == "__main__":
 ```
 pytest --count=1000 -x test_file.py
 ```
+
+### Hooks函数获取用例执行结果(pytest_runtest_makereport)
+
+pytest 提供的很多钩子(Hooks)方法方便我们对测试用例框架进行二次开发, 可以根据自己的需求进行改造
+
+#### pytest_runtest_makereport
+
+```
+# conftest.py
+import pytest
+
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
+def pytest_runtest_makereport(item, call):
+    print('---------------------------')
+    
+    # 获取钩子方法的调用结果
+    out = yield
+    print('用例执行结果', out)
+    
+    # 从钩子方法的调用结果中获取测试报告
+    report = out.get_result()
+    print('测试报告', report)
+    print('步骤: %s' % report.when)
+    print('nodeid: %s' % report.nodeid)
+    print('description: %s' % str(item.function.__doc__))
+    print('运行结果: %s' % report.outcome)
+
+# test_a.py
+def test_a():
+    '''用例描述:test_a'''
+    print("上海-悠悠")
+```
+
+运行用例 `pytest test_a.py -s`
+
+从运行结果可以看出, 运行用例的过程会经历三个阶段: setup-call-teardown, 每个阶段都会返回的 Result 对象和 TestReport 对象, 以及对象属性
+
+#### setup 和 teardown
+
+1. 给用例写个 fixture 增加用例的前置和后置操作
+
+```
+import pytest
+
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
+def pytest_runtest_makereport(item, call):
+    print('---------------------------')
+    
+    # 获取钩子方法的调用结果
+    out = yield
+    print('用例执行结果', out)
+    
+    # 从钩子方法的调用结果中获取测试报告
+    report = out.get_result()
+    print('测试报告', report)
+    print('步骤: %s' % report.when)
+    print('nodeid: %s' % report.nodeid)
+    print('description: %s' % str(item.function.__doc__))
+    print('运行结果: %s' % report.outcome)
+    
+@pytest.fixture(scope='session', autouse=True)
+def fix_a():
+    print('setup前置操作')
+    yield
+    print('setup后置操作')
+```
+
+- setup失败:后面的call用例和teardown都不会执行, 结果是error
+
+- call失败:结果就是failed
+
+- teardown失败:结果是failed
+
+2. 只获取 call 的结果
+
+我们在写用例的时候, 保证setup和teardown不报错的情况, 只关注测试用例本身的运行结果, 前面的 pytest_runtest_makereport 钩子方法执行了三次
+
+```
+import pytest
+
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
+def pytest_runtest_makereport(item, call):
+    print('---------------------------')
+    
+    # 获取钩子方法的调用结果
+    out = yield
+    print('用例执行结果', out)
+    
+    # 从钩子方法的调用结果中获取测试报告
+    report = out.get_result()
+    if report.when == 'call':
+        print('测试报告', report)
+        print('步骤: %s' % report.when)
+        print('nodeid: %s' % report.nodeid)
+        print('description: %s' % str(item.function.__doc__))
+        print('运行结果: %s' % report.outcome)
+    
+@pytest.fixture(scope='session', autouse=True)
+def fix_a():
+    print('setup前置操作')
+    yield
+    print('setup后置操作')
+```
