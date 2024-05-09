@@ -1171,3 +1171,100 @@ markers =
 
  addopts = -v --reruns 1 --html=report.html --self-contained-html
 ```
+
+### doctest测试框架
+
+doctest从字面意思上看, 就是文档测试。doctest是python里面自带的一个模块, 它实际上是单元测试的一种。官方解释: doctest模块会搜索那些看起来像交互会话的Python代码片段, 然后尝试执行并验证结果
+
+doctest测试用例可以放在两个地方
+
+- 函数或者方法下的注释里面
+
+- 模块的开头
+
+#### 案例
+
+将需要测试的代码片段，标准格式，需要运行的代码前加>>>, 相当于进入cmd这种交互环境执行, 期望的结果前面不需要加>>>
+```
+>>> multiply(4, 3)
+    12
+>>> multiply('a', 3)
+    'aaa'
+```
+
+放到multiply函数的注释里
+```
+def multiply(a, b):
+    """
+    function: 两个数相乘
+    >>> multiply(4, 3)
+    12
+    >>> multiply('a', 3)
+    'aaa'
+    """
+    return a * b
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod(verbose=True)
+```
+
+#### 失败案例
+
+doctest的内容放到.py模块的开头也是可以识别到的
+
+```
+'''
+function: 两个数相乘
+>>> multiply(4, 8)
+12
+>>> multiply('a', 5)
+'aaa'
+'''
+
+def multiply(a, b):
+    """
+    function: 两个数相乘
+    """
+    return a * b
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod(verbose=True)
+```
+
+***verbose参数, 设置为True则在执行测试的时候会输出详细信息***
+
+#### cmd执行
+
+以上案例是在编辑器直接运行的, 如果在cmd里面, 也可以用指令去执行
+
+```
+python -m doctest -v xxx.py
+```
+
+- m 参数指定运行方式为 doctest
+
+- -v 参数是verbose, 带上 -v 参数相当于 verbose=True
+
+#### pytest运行
+
+pytest框架是可以兼容doctest用例, 执行的时候加个参数 --doctest-modules, 这样它就能自动搜索到doctest的用例
+
+```
+pytest -v --doctest-modules xxx.py
+```
+
+#### doctest独立文件
+
+doctest内容也可以和代码抽离开, 单独用一个.txt文件保存。在当前xxx.py同一目录新建一个xxx.txt文件，写入测试的文档, 要先导入该功能, 导入前面也要加>>>
+
+```
+>>> from xxx import multiply
+>>> multiply(4, 3)
+12
+>>> multiply('a', 3)
+'aaa'
+```
+
+命令行执行用例 `python -m doctest -v xxx.txt`
