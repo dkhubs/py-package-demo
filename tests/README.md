@@ -930,3 +930,119 @@ if __name__ == '__main__':
 #### 标记为xfail
 
 让pwd参数为空, 再看看登录失败情况的用例, 修改登录的参数
+
+### fixture的autouse参数
+
+调用fixture的三种方法
+
+1. 函数或类里面方法直接传fixture的函数参数名称。先定义start功能, 用例全部传start参数, 调用该功能
+
+```
+# coding: utf-8
+
+import time
+import pytest
+
+@pytest.fixture(scope='function')
+def start(request):
+    print('\n-----开始执行function------')
+    
+def test_a(start):
+    print('-----用例a执行-----')
+    
+class Test_aaa():
+    def test_01(self, start):
+        print('-----用例1执行-----')
+    def test_02(self, start):
+        print('-----用例2执行-----')
+        
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_03.py'])   
+```
+
+2. 使用装饰器@pytest.mark.usefixtures()修饰需要运行的用例
+
+```
+# coding: utf-8
+
+import time
+import pytest
+
+@pytest.fixture(scope='function')
+def start(request):
+    print('开始计时')
+
+@pytest.mark.usefixtures('start')
+def test_1():
+    print('用例1: 用例1')
+    
+@pytest.mark.usefixtures('start')
+def test_2():
+    print('用例2: 用例2')
+
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_03.py'])   
+```
+
+3. autouse = True自动调用fixture功能, 用例很多的时候这个方法更方便
+
+- start设置scope为module级别, 在当前.py用例模块只执行一次, autouse=True自动使用
+
+- open_home设置scope为function级别, 每个用例前都调用一次, 自动使用
+
+```
+# coding: utf-8
+
+import pytest
+
+@pytest.fixture(scope='module', autouse=True)
+def start(request):
+    print('开始执行module')
+    print('module: %s ' % request.module.__name__)
+    
+    yield
+    print('module: %s 执行完毕' % request.module.__name__)
+    
+@pytest.fixture(scope='function', autouse=True)
+def open_home(request):
+    print('function: %s ----' % request.function.__name__)
+
+def test_01():
+    print('用例1')
+    
+def test_02():
+    print('用例2')
+
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_03.py'])   
+```
+
+写到class里一样可以
+
+```
+# coding: utf-8
+
+import pytest
+
+@pytest.fixture(scope='module', autouse=True)
+def start(request):
+    print('开始执行module')
+    print('module: %s ' % request.module.__name__)
+    
+    yield
+    print('module: %s 执行完毕' % request.module.__name__)
+    
+class Test_aa():
+    @pytest.fixture(scope='function', autouse=True)
+    def open_home(self, request):
+        print('function: %s ----' % request.function.__name__)
+
+    def test_01(self):
+        print('用例1')
+        
+    def test_02(self):
+        print('用例2')
+
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_03.py'])   
+```
