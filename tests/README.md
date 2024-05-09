@@ -1959,3 +1959,54 @@ def fix_a():
     yield
     print('setup后置操作')
 ```
+
+### Hooks函数改变用例执行顺序(pytest_collection_modifyitems)
+
+原则上我们在设计用例时不要有依赖顺序。pytest 默认执行用例是先根据项目下的文件夹名称按Ascii码去收集的, module里面的用例是从上往下执行的
+
+#### pytest_collection_modifyitems
+
+这个Hooks的功能是当测试用例收集完成后, 可以改变测试用例集合(items)的顺序
+
+1. pytest 默认执行顺序
+
+```
+# conftest.py
+import pytest
+def pytest_collection_modifyitems(session, items):
+    print("收集到的测试用例:%s"%items)
+
+# test_a.py
+def test_a_1():
+    print("测试用例a_1")
+
+def test_a_2():
+    print("测试用例a_2")
+
+# test_b.py
+def test_b_2():
+    print("测试用例b_2")
+
+def test_b_1():
+    print("测试用例b_1")
+```
+
+2. items 用例排序
+
+如果我想改变上面的用例执行顺序, 以用例名称ascii码排序。先获取到用例的名称, 以用例名称排序就可以了
+
+```
+import pytest
+
+def pytest_collection_modifyitems(session, items):
+    print(type(items))
+    print('收集到的测试用例: %s' % items)
+    
+    # sort 排序, 根据用例名称 item.name 排序
+    items.sort(key=lambda item: item.name)
+    print('排序后的用例: %s' % items)
+    for item in items:
+        print('用例名称: %s' % item.name)
+```
+
+3. 重新执行 `pytest -s`

@@ -1,24 +1,11 @@
 import pytest
 
-@pytest.hookimpl(hookwrapper=True, tryfirst=True)
-def pytest_runtest_makereport(item, call):
-    print('---------------------------')
+def pytest_collection_modifyitems(session, items):
+    print(type(items))
+    print('收集到的测试用例: %s' % items)
     
-    # 获取钩子方法的调用结果
-    out = yield
-    print('用例执行结果', out)
-    
-    # 从钩子方法的调用结果中获取测试报告
-    report = out.get_result()
-    if report.when == 'call':
-        print('测试报告', report)
-        print('步骤: %s' % report.when)
-        print('nodeid: %s' % report.nodeid)
-        print('description: %s' % str(item.function.__doc__))
-        print('运行结果: %s' % report.outcome)
-    
-@pytest.fixture(scope='session', autouse=True)
-def fix_a():
-    print('setup前置操作')
-    yield
-    print('setup后置操作')
+    # sort 排序, 根据用例名称 item.name 排序
+    items.sort(key=lambda item: item.name)
+    print('排序后的用例: %s' % items)
+    for item in items:
+        print('用例名称: %s' % item.name)
