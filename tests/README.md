@@ -1268,3 +1268,101 @@ doctest内容也可以和代码抽离开, 单独用一个.txt文件保存。在�
 ```
 
 命令行执行用例 `python -m doctest -v xxx.txt`
+
+### pytest-html报告优化(添加Description)
+
+pytest-html框架是可以修改生成的报告内容的, 可以自己添加和删除html报告的table内容
+
+#### 修改报告
+
+可以通过标题行实现自定义钩子来修改列, 下面的示例在conftest.py脚本中使用测试函数docstring添加描述(Description)列, 添加可排序时间(Time)列, 并删除链接(Link)列
+
+```
+# 安装库
+# pip install -U py
+
+import pytest
+from py.xml import html
+
+@pytest.mark.optionalhook
+def pytest_html_results_table_header(cells):
+    cells.insert(2, html.th('Description'))
+    cells.insert(1, html.th('Time', class_='sortable time', col='time'))
+    cells.pop()
+    
+@pytest.mark.optionalhook
+def pytest_html_results_table_row(report, cells):
+    cells.insert(2, html.td(report.description))
+    cells.insert(1, html.td(datetime.utcnow(), class_='col-time'))
+    cells.pop()
+    
+@pytest.mark.optionalhook
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    report = outcome.get_result()
+    report.description = str(item.function.__doc__)
+```
+
+1. 通过删除所有单元格来删除结果
+
+```
+import pytest
+
+@pytest.mark.optionalhook
+def pytest_html_results_table_row(report, cells):
+    if report.passed:
+      del cells[:]
+```
+
+2. 日志输出和附加HTML可以通过pytest_html_results_table_html hooks来修改
+
+```
+import pytest
+
+@pytest.mark.optionalhook
+def pytest_html_results_table_html(report, data):
+    if report.passed:
+        del data[:]
+        data.append(html.div('No log output captured.', class_='empty log'))
+```
+
+#### 添加 Desciption
+
+通过上面的官方文档, 可以自己修改测试报告, 在报告里面添加一列的内容, 添加到第二列, 于是修改如下
+
+```
+import pytest
+from py.xml import html
+
+driver = None
+
+@pytest.mark.optionalhook
+def pytest_html_results_table_header(cells):
+    cells.insert(1, html.th('Description'))
+
+@pytest.mark.optionalhook
+def pytest_html_results_table_row(report, cells):
+    cells.insert(1, html.td(report.description))
+
+@pytest.mark.hookwrapper
+def pytest_runtest_makereport(item):
+    """当测试失败的时候, 自动截图, 展示到html报告中"""
+    pytest_html = item.config.pluginmanager.getplugin('html')
+    outcome = yield
+    report = outcome.get_result()
+    extra = getattr(report, 'extra', [])
+    
+    if report.when == 'call' or report.when == "setup":
+        xfail = hasattr(report, 'wasxfail')
+        if (report.skipped and xfail) or (report.failed and not xfail):
+            file_name = report.nodeid.replace("::", "_") + ".png"
+            screenshot = driver.get_screenshot_as_base64()
+            if file_name:
+                html = '<div><img src="data:image/png;base64,%s" alt="screenshot" style="width:600px;height:300px;" ' \
+                    'onclick="window.open(this.src)" align="right"/></div>' % screenshot
+                extra.append(pytest_html.extras.html(html))
+        report.extra = extra
+        report.description = str(item.function.doc)
+```
+
+执行用例生成报告 `pytest --html=report.html --self-contained-html`

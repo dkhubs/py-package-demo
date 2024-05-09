@@ -1,13 +1,13 @@
-import pytest
+# import pytest
 
-@pytest.fixture()
-def login():
-    print('----输入账号、密码登录----')
+# @pytest.fixture()
+# def login():
+#     print('----输入账号、密码登录----')
     
 # from selenium import webdriver
 # import pytest
 
-# driver = None
+driver = None
 
 # @pytest.mark.hookwrapper
 # def pytest_runtest_makereport(item):
@@ -40,11 +40,54 @@ def login():
 #     request.addfinalizer(end)
 #     return driver
 
-import pytest
-
-def pytest_addoption(parser):
-    parser.addoption('--cmdopt', action='store', default='type1', help='my option: type1 or type2')
+# def pytest_addoption(parser):
+#     parser.addoption('--cmdopt', action='store', default='type1', help='my option: type1 or type2')
     
-@pytest.fixture
-def cmdopt(request):
-    return request.config.getoption('--cmdopt')
+# @pytest.fixture
+# def cmdopt(request):
+#     return request.config.getoption('--cmdopt')
+
+from datetime import datetime
+import pytest
+from py.xml import html
+
+@pytest.mark.optionalhook
+def pytest_html_results_table_header(cells):
+    cells.insert(1, html.th('Description'))
+    # cells.insert(2, html.th('Description'))
+    # cells.insert(1, html.th('Time', class_='sortable time', col='time'))
+    # cells.pop()
+    
+@pytest.mark.optionalhook
+def pytest_html_results_table_row(report, cells):
+    cells.insert(1, html.td(report.description))
+    # cells.insert(2, html.td(report.description))
+    # cells.insert(1, html.td(datetime.utcnow(), class_='col-time'))
+    # cells.pop()
+    
+# @pytest.mark.optionalhook
+# def pytest_runtest_makereport(item, call):
+#     outcome = yield
+#     report = outcome.get_result()
+#     report.description = str(item.function.__doc__)
+    
+
+@pytest.mark.hookwrapper
+def pytest_runtest_makereport(item):
+    """当测试失败的时候, 自动截图, 展示到html报告中"""
+    pytest_html = item.config.pluginmanager.getplugin('html')
+    outcome = yield
+    report = outcome.get_result()
+    extra = getattr(report, 'extra', [])
+    
+    if report.when == 'call' or report.when == "setup":
+        xfail = hasattr(report, 'wasxfail')
+        if (report.skipped and xfail) or (report.failed and not xfail):
+            file_name = report.nodeid.replace("::", "_") + ".png"
+            screenshot = driver.get_screenshot_as_base64()
+            if file_name:
+                html = '<div><img src="data:image/png;base64,%s" alt="screenshot" style="width:600px;height:300px;" ' \
+                    'onclick="window.open(this.src)" align="right"/></div>' % screenshot
+                extra.append(pytest_html.extras.html(html))
+        report.extra = extra
+        report.description = str(item.function.doc)
