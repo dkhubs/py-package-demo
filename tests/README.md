@@ -2305,3 +2305,67 @@ def pytest_collection_modifyitems(items):
         print(item.nodeid)
         item._nodeid = item.nodeid.encode("utf-8").decode("unicode_escape")
 ```
+
+### fixture 参数化 params
+
+参数化是自动化测试里面必须掌握的一个知识点, 用过 unittest 框架的小伙伴都知道使用 ddt 来实现测试用例的参数化。pytest测试用例里面对应的参数可以用 parametrize 实现, 随着用例的增多, 需求也会越来越大, 那么如何在 fixture 中使用参数呢
+
+1. fixture 源码有几个参数: scope, params, autouse, ids, name
+
+```
+def fixture(scope="function", params=None, autouse=False, ids=None, name=None):
+    ...
+    :arg params: an optional list of parameters which will cause multiple invocations of the fixture function and all of the tests using it.
+        The current parameter is available in ``request.param``.
+```
+
+2. 重点看 params 参数: 一个可选的参数列表, 它将导致多次调用 fixture 函数和使用它的所有测试。获取当前参数可以使用 `request.param`
+
+#### 案例
+
+1. request 是 pytest 的内置 fiture, 主要用于传递参数
+
+```
+import pytest
+
+userData = ['admin', 'zhangsan']
+
+@pytest.fixture(scope='function', params=userData)
+def users(request):
+    return request.param
+
+def test_register(users):
+    print('注册用户: %s' % users)
+    
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_fixture_params.py'])
+```
+
+2. 前置与后置: 如果每次注册用户之前, 需先在前置操作里面清理用户注册表的数据, 可以执行SQL, 传不同用户的参数
+```
+import pytest
+
+def delete_sql(user):
+    sql = 'delete fron auth_user WHERE username = "%s";' % user
+    print('执行的SQL: %s' % sql)
+    
+userData = ['admin', 'zhangsan']
+
+@pytest.fixture(scope='function', params=userData)
+def users(request):
+    # 前置操作
+    delete_sql(request.param)
+    
+    yield request.param
+    
+    # 后置操作
+    delete_sql(request.param)
+    
+def test_request(users):
+    print('注册用户: %s' % users)
+    
+if __name__ == '__main__':
+    pytest.main(['-s', 'test_fixture_params.py'])
+```
+
+### 
