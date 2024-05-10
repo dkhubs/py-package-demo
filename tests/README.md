@@ -2150,3 +2150,113 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
         fp.write("SUCCESSFUL=%.2f%%" % successful+"\n")
         fp.write("TOTAL_TIMES=%.2fs" % duration)
 ```
+
+### `pytest-assume` 断言失败后继续执行
+
+#### 环境准备
+
+```
+pip install pytest-assume
+```
+
+#### 案例
+
+1. 遇到第一个断言就失败, 后面2个断言不会执行
+```
+@pytest.mark.parametrize(('x', 'y'), [(1, 1), (1, 0), (0, 1)])
+def test_simple_assume(x, y):
+    print('测试数据 x=%s, y=%s' % (x, y))
+    assert x == y
+    assert x + y > 1
+    assert x > 1
+```
+
+2. pytest-assume
+```
+import pytest
+
+@pytest.mark.parametrize(('x', 'y'), [(1, 1), (1, 0), (0, 1)])
+def test_simple_assume(x, y):
+    print('测试数据 x=%s, y=%s' % (x, y))
+    pytest.assume(x == y)
+    pytest.assume(x + y > 1)
+    pytest.assume(x > 1)
+    print('测试完成!')
+```
+
+3. 上下文管理器
+```
+import pytest
+from pytest import assume
+
+@pytest.mark.parametrize(('x', 'y'), [(1, 1), (1, 0), (0, 1)])
+def test_simple_assume(x, y):
+    print('测试数据 x=%s, y=%s' % (x, y))
+    with assume: assert x == y
+    with assume: assert x + y > 1
+    with assume: assert x > 1
+    print('测试完成!')
+```
+
+需要注意的是每个with块只能有一个断言，如果一个with下有多个断言，当第一个断言失败的时候，后面的断言就不会起作用的
+
+```
+import pytest
+from pytest import assume
+
+@pytest.mark.parametrize(('x', 'y'), [(1, 1), (1, 0), (0, 1)])
+def test_simple_assume(x, y):
+    print('测试数据x=%s, y=%s' % (x, y))
+    with assume:
+        assert x == y
+        assert x+y > 1
+        assert x > 1
+    print('测试完成!')
+```
+
+### `pytest-ordering` 自定义用例顺序
+
+#### 环境准备
+
+```
+pip install pytest-ordering
+```
+
+#### 案例
+
+1. 正常顺序
+```
+import pytest
+
+def test_foo():
+    print('用例11111')
+    assert True
+    
+def test_bar():
+    print('用例22222')
+    assert True
+    
+def test_g():
+    print('用例33333')
+    assert True
+```
+
+2. 使用 pytest-ordering 插件后改变测试用例顺序
+```
+import pytest
+
+@pytest.mark.run(order=2)
+def test_foo():
+    print('用例11111')
+    assert True
+    
+@pytest.mark.run(order=1)
+def test_bar():
+    print('用例22222')
+    assert True
+    
+@pytest.mark.run(order=3)
+def test_g():
+    print('用例33333')
+    assert True
+```

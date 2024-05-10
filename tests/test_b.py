@@ -4,7 +4,7 @@ import pytest
 @pytest.fixture(scope="function")
 def setup_demo():
     yield 
-    raise TypeError("ERROR!")
+    # raise TypeError("ERROR!")
 
 def test_5(setup_demo):
     print("测试用例55555555")
