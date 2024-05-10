@@ -2260,3 +2260,48 @@ def test_g():
     print('用例33333')
     assert True
 ```
+
+### `pytest_collection_modifyitems` 参数化之unicode编码问题
+
+使用 pytest.mark.parametrize 参数化的时候, 加 ids 参数用例描述有中文时, 在控制台输出会显示 unicode 编码, 中文不能正常显示。使用 pytest_collection_modifyitems 钩子函数, 对输出的 item.name 和 item.nodeid 重新编码
+
+#### 问题描述
+
+参数化id用例描述有中文
+```
+# test_ids.py
+
+import pytest
+
+def login(username, password):
+    return {'code':0, 'msg':'success'}
+
+testDatas = [
+    ({'username':'admin', 'password':'123456'}, 'success!'),
+    ({'username':'zhangsan', 'password':'123456'}, 'success!'),
+    ({'username':'lisi', 'password':'123456'}, 'success!')
+]
+
+@pytest.mark.parametrize('test_input,expected', testDatas, ids=['输入正确账号，密码，登录成功', '输入错误账号，密码，登录失败', '输入正确账号，密码，登录成功'])
+def test_login(test_input, expected):
+    result = login(test_input['username'], test_input['password'])
+    assert result['msg'] == expected
+```
+
+#### 解决办法
+
+在 conftest.py 文件, 加以下代码
+
+```
+import pytest
+
+def pytest_collection_modifyitems(items):
+    """
+    测试用例收集完成时，将收集到的item的name和nodeid的中文显示在控制台上
+    :return:
+    """
+    for item in items:
+        item.name = item.name.encode("utf-8").decode("unicode_escape")
+        print(item.nodeid)
+        item._nodeid = item.nodeid.encode("utf-8").decode("unicode_escape")
+```
