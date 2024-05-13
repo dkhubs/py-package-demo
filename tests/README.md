@@ -2490,3 +2490,42 @@ pytest test_https.py -p no:warnings
 [pytest]
 addopts = -p no:warnings
 ```
+
+### 切换 base_url 测试环境
+
+当我们自动化代码写完之后, 期望能在不同的环境测试, 这时候应该把 base_url 单独拿出来, 通过配置文件和支持命令行参数执行
+
+1. 安装 `pytest-base-url` 插件
+
+```
+pip install pytest-base-url
+```
+
+2. 使用案例
+
+直接在用例里面使用 base_url 参数, 当成一个 fixture 使用
+
+```
+# test_demo.py
+
+import requests
+
+def test_example(base_url):
+    assert 200 == requests.get(base_url).status_code
+```
+
+命令执行的时候加上 `--base-url`
+
+```
+pytest --base-url http://www.example.com
+```
+
+3. pytest.ini 配置文件
+
+也可以在 pytest.ini 配置文件中添加 base_url 地址, 就不要在命令行带上 `--base-url` 参数
+
+```
+# pytest.ini
+[pytest]
+base_url = http://www.example.com
+```
