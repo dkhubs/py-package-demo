@@ -2723,3 +2723,13 @@ def test_02(login):
 命令执行 `pytest test_s.py`
 
 加上 `--setup-show` 命令行参数后执行, 这样就可以方便查看用例调用了哪些fixture, 上面用例里面只写了一个login, 但是从回溯信息上看到还有几个是内置的fixture会自动调用：__pytest_repeat_step_number, _verify_url, base_url
+
+### 命令行实时输出错误信息 `pytest-instafail`
+
+pytest 运行全部用例的时候, 在控制台会先显示用例的运行结果(.或F), 用例全部运行完成后把报错信息全部一起抛出到控制台, 这样不方便实时查看报错信息。pytest-instafail 插件可以在运行用例的时候, 实时查看用例报错内容, 方便定位问题
+
+- `instafail` 执行全部用例, 报错内容等用例运行完成才显示出来
+
+```
+pytest --instafail --tb=line
+```
