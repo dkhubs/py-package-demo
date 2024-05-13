@@ -2572,3 +2572,63 @@ def test_01():
 - `--tb=native` 只输出 python 标准库的回溯信息
 
 - `--tb=no` 不显示回溯信息
+
+### 命令行参数 `--durations` 统计用例运行时间
+
+写完一个项目的自动化用例之后, 发现有些用例运行较慢, 影响整体的用例运行速度, 需要找出运行慢的用例做优化
+
+1. `--durations` 参数可以统计出每个用例运行的时间, 对用例的时间做个排序。查看使用方式
+
+```
+>pytest -h
+
+reporting:
+  --durations=N         show N slowest setup/test durations (N=0 for all).
+```
+
+2. `--durations=0` 显示全部用例的运行时间
+
+先写几个 pytest 的用例, 在用例里面加 sleep 时间, 这样方便看到每个用例运行的持续时间
+
+```
+# test_dur.py
+
+import pytest
+import time
+
+@pytest.fixture()
+def set_up_fixture():
+    time.sleep(0.1)
+    yield
+    time.sleep(0.2)
+    
+def test_01(set_up_fixture):
+    print("测试用例1")
+    time.sleep(1.0)
+    
+def test_02(set_up_fixture):
+    print("测试用例2")
+    time.sleep(0.6)
+    
+def test_03(set_up_fixture):
+    print("测试用例3")
+    time.sleep(1.2)
+    
+def test_04(set_up_fixture):
+    print("测试用例4")
+    time.sleep(0.8)
+
+def test_05(set_up_fixture):
+    print("测试用例5")
+    time.sleep(2.8)
+```
+
+执行命令 `pytest test_dur.py --durations=0 -v`
+
+用例运行会经历三个阶段, setup, call, teardown; call就是测试用例, setup 和 teardown 就是用例的 fixture 部分
+
+3. `--durations=3` 筛选出运行时间最慢的3条用例
+
+```
+pytest test_dur.py --durations=3 -v
+```
