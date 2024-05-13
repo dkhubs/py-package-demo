@@ -2438,3 +2438,55 @@ addopts = -v
     --metadata auther yoyo
     --metadata version v1.0
 ```
+
+### https请求警告问题
+
+使用 pytest 执行 https 请求用例的时候, 控制台会出现 `InsecureRequestWarning: Unverified HTTPS request is being made. Adding certificate verification is strongly advised.` 当出现这个警告的时候, 我们的第一反应是 `urllib3.disable_warnings()` 然而并不管用
+
+- 问题描述: 使用 requests 库发 https 请求, 添加 verify=False 忽略证书
+
+```
+import requests
+import urllib3
+urllib3.disable_warnings()
+
+def test_h():
+    url = 'https://www.cnblogs.com/yoyoketang'
+    s = requests.session()
+    s.verify = False
+    r = s.get(url)
+    assert '上海-悠悠' in r.text
+```
+
+- 问题分析: `urllib3.disable_warnings()` 不生效。原因: pytest 框架运行的时候会查找 test_.py 文件下的 test_() 函数或方法的用例, 也就是只会执行 test_h() 下面的代码, 所以根本就不会执行它上面的代码, 可以试试换个位置, 放到test_h()以下, 就会生效
+
+```
+import requests
+import urllib3
+
+def test_h():
+    urllib3.disable_warnings()
+    url = 'https://www.cnblogs.com/yoyoketang'
+    s = requests.session()
+    s.verify = False
+    r = s.get(url)
+    assert '上海-悠悠' in r.text
+```
+
+#### warnings 文档
+
+1. 命令行参数 `--disable-warnings` 忽略告警
+
+```
+pytest test_https.py --disable-warnings
+```
+
+2. 带上 -p 参数运行
+
+```
+pytest test_https.py -p no:warnings
+
+# pytest.ini
+[pytest]
+addopts = -p no:warnings
+```
