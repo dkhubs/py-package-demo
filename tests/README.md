@@ -2693,3 +2693,33 @@ def test_04():
 ```
 pytest --cache-clear
 ```
+
+### 命令行参数 查看 fixture 的执行过程
+
+1. `setup-show`
+
+```
+# test_s.py
+
+import pytest
+
+@pytest.fixture()
+def login():
+    print('前置操作: 准备数据')
+    yield
+    print('后置操作: 清理数据')
+    
+def test_01(login):
+    a = 'hello'
+    b = 'hello'
+    assert a == b
+
+def test_02(login):
+    a = 'hello'
+    b = 'hello world'
+    assert a == b
+```
+
+命令执行 `pytest test_s.py`
+
+加上 `--setup-show` 命令行参数后执行, 这样就可以方便查看用例调用了哪些fixture, 上面用例里面只写了一个login, 但是从回溯信息上看到还有几个是内置的fixture会自动调用：__pytest_repeat_step_number, _verify_url, base_url
