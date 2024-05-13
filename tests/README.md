@@ -2368,4 +2368,73 @@ if __name__ == '__main__':
     pytest.main(['-s', 'test_fixture_params.py'])
 ```
 
-### 
+### `pytest-metadata` 元数据使用
+
+元数据是关于数据的描述, 存储着关于数据的信息
+
+1. 环境准备
+
+```
+pip install pytest-metadata
+```
+
+2. 查看 pytest 元数据
+
+`pytest -v` 或 `pytest --verbose` 在控制台输出报告的头部就会输出元数据(metadata)
+
+3. 自定义 metadata: 在命令行添加键值对的元数据
+
+`pytest --metadata auther aaa`
+
+`pytest --metadata auther aaa --metadata version v1.0`
+
+`pytest --metadata-from-json '{"cat_says":"bring the cat nip", "human_says":"yes kitty"}'`
+
+4. pytest_metadata hook 函数
+
+在代码里面新增/修改/删除元数据
+
+```
+import pytest
+
+@pytest.mark.optionalhook
+def pytest_metadata(metadata):
+    metadata.pop('password', None)
+```
+
+我们可以使用 metadata fixture, 用于测试用例或 fixture 访问元数据(metadata)
+
+```
+def test_metadata(metadata):
+    assert 'metadata' in metadata['Plugins']
+```
+
+在插件里面访问 metadata, 可以在 config 对象中使用 _metadata 属性来新增/修改/删除元数据
+
+```
+def pytest_configure(config):
+    if hasattr(config, '_metadata'):
+        config._metadata['foo'] = 'bar'
+```
+
+5. 插件集成
+
+- pytest-base-url 添加基础 URL 到 metadata
+
+- pytest-html 在每份报告的开头显示元数据
+
+- pytest-selenium 将驱动程序、功能和远程服务器添加到元数据中
+
+6. pytest.ini 管理元数据
+
+如果新增的元数据较多, 在命令行输入不太方便, 可以在 pytest.ini 配置里面配置你的项目元数据
+
+```
+[pytest]
+
+addopts = -v
+    --html=report.html
+    --self-contained-html
+    --metadata auther yoyo
+    --metadata version v1.0
+```
