@@ -2632,3 +2632,64 @@ def test_05(set_up_fixture):
 ```
 pytest test_dur.py --durations=3 -v
 ```
+
+### 内置 fixture 之 cache 使用
+
+pytest 运行完用例之后, 会生成一个 .pytest_cache 的缓存文件夹, 用于记录用例的 ids 和上一次失败的用例。方便我们在运行用例的时候加上 `--lf` 和 `--ff` 参数
+
+- `--lf` --last-failed 只重新运行上次运行失败的用例(或如果没有失败的话会全部跑)
+
+- `--ff` --failed-first 运行所有测试, 但首先运行上次运行失败的测试(这可能会重新测试, 从而导致fixture setup/teardown)
+
+1. cache
+
+```
+>pytest -h
+
+--lf, --last-failed   rerun only the tests that failed at the last run (or
+                        all if none failed)
+--ff, --failed-first  run all tests but run the last failures first. This
+                        may re-order tests and thus lead to repeated fixture
+--nf, --new-first     run tests from new files first, then the rest of the
+                        tests sorted by file mtime
+--cache-show=[CACHESHOW]
+                        show cache contents, don't perform collection or
+                        tests. Optional argument: glob (default: '*').
+--cache-clear         remove all cache contents at start of test run.
+```
+
+2. --cache-show
+
+```
+test_x.py
+
+def test_01():
+    a = 'hello'
+    b = 'world'
+    assert a== b
+    
+def test_02():
+    a = 'hello'
+    b = 'hello world'
+    assert a == b
+    
+def test_03():
+    a = 'hello'
+    b = 'hello world'
+    assert a in b
+    
+def test_04():
+    a = 'hello'
+    b = 'hello world'
+    assert a not in b
+```
+
+执行命令 `pytest test_x.py --tb=no`
+
+通过 `pytest --cache-show` 命令查看 cache 目录
+
+3. `--cache-clear` 用于在测试用例开始之前清空cache的内容
+
+```
+pytest --cache-clear
+```
