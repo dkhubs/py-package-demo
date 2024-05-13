@@ -2529,3 +2529,46 @@ pytest --base-url http://www.example.com
 [pytest]
 base_url = http://www.example.com
 ```
+
+### 命令行参数 `--tb`
+
+pytest 使用命令行执行用例的时候, 有些用例执行失败时, 屏幕上会出现一大堆的报错内容, 不方便快速查看哪些用例失败。`--tb=style` 参数可以设置报错的时候回溯打印内容
+
+1. `--tb=style` 使用方式
+
+```
+pytest -h
+
+--tb=style            traceback print mode (auto/long/short/line/native/no).
+```
+
+style 的值可以设置6种打印模式, auto/long/short/line/native/no
+
+2. `--tb=no`
+
+```
+# test_tb.py
+
+def test_01():
+    result = 'hello'
+    expected = 'world'
+    assert result == expected
+```
+
+执行命令 `pytest test_tb.py --tb=no`
+
+3. 其他命令
+
+- `--tb=line` line 模式使用一行输出所有的错误信息
+
+- `--tb=auto` 有多个用例失败的时候, 只打印第一个和最后一个用例的回溯信息
+
+- `--tb=short` short 模式显示断言报错的位置, 不显示用例前面的代码
+
+- `--tb=long` 输出最详细的回溯信息
+
+- `--tb=short` 输入 assert 的一行和系统判断内容
+
+- `--tb=native` 只输出 python 标准库的回溯信息
+
+- `--tb=no` 不显示回溯信息
